@@ -15,7 +15,7 @@ if (!API_KEY_BOT) {
 }
 
 const bot = new TelegramBot(API_KEY_BOT, {
-    polling: !isProduction,
+    // polling: !isProduction,
     webHook: {
         host: `${BASE_URL}`,
         port,
@@ -108,27 +108,27 @@ bot.on("callback_query", async (ctx): Promise<void> => {
     }
 })
 
-if (isProduction) {
-    // This informs the Telegram servers of the new webhook.
-    // bot.setWebHook(`${BASE_URL}/bot${API_KEY_BOT}`)
+// if (isProduction) {
+// This informs the Telegram servers of the new webhook.
+// bot.setWebHook(`${BASE_URL}/bot${API_KEY_BOT}`)
 
-    const app = express()
+const app = express()
 
-    // parse the updates to JSON
-    app.use(express.json())
+// parse the updates to JSON
+app.use(express.json())
 
-    // We are receiving updates at the route below!
-    app.post(`/bot${API_KEY_BOT}`, (req, res) => {
-        bot.processUpdate(req.body)
-        res.sendStatus(200)
-    })
+// We are receiving updates at the route below!
+app.post(`/bot${API_KEY_BOT}`, (req, res) => {
+    bot.processUpdate(req.body)
+    res.sendStatus(200)
+})
 
-    // Start Express Server
-    app.listen(port, () => {
-        console.log(`Express server is listening on ${port}`)
-    })
+// Start Express Server
+app.listen(port, () => {
+    console.log(`Express server is listening on ${port}`)
+})
 
-    app.get("/", (req, res) => {
-        res.send("Hello World!")
-    })
-}
+app.get("/", (req, res) => {
+    res.send("Hello World!")
+})
+// }
