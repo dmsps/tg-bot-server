@@ -1,16 +1,18 @@
 import TelegramBot from "node-telegram-bot-api"
+import express from "express"
 require("dotenv").config()
 
 import { openaiSendQuery } from "./plugins/Openai"
 
 const API_KEY_BOT = process.env.API_KEY_BOT
+const isProduction = process.env.NODE_ENV === "production"
 
 if (!API_KEY_BOT) {
     throw new Error(`Empty Bot API Key`)
 }
 
 const bot = new TelegramBot(API_KEY_BOT, {
-    polling: true,
+    ...(!isProduction && { polling: true }),
 })
 
 bot.on("polling_error", (err: any): void => console.log(err?.data?.error.message))
@@ -97,3 +99,26 @@ bot.on("callback_query", async (ctx): Promise<void> => {
         })
     }
 })
+
+if (isProduction) {
+    const BASE_URL = process.env.BASE_URL
+    const BASE_PORT = process.env.BASE_PORT
+    // This informs the Telegram servers of the new webhook.
+    bot.setWebHook(`${BASE_URL}/bot${API_KEY_BOT}`)
+
+    const app = express()
+
+    // parse the updates to JSON
+    app.use(express.json())
+
+    // We are receiving updates at the route below!
+    app.post(`/bot${API_KEY_BOT}`, (req, res) => {
+        bot.processUpdate(req.body)
+        res.sendStatus(200)
+    })
+
+    // Start Express Server
+    app.listen(BASE_PORT, () => {
+        console.log(`Express server is listening on ${BASE_PORT}`)
+    })
+}
