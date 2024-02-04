@@ -4,15 +4,23 @@ require("dotenv").config()
 
 import { openaiSendQuery } from "./plugins/Openai"
 
+const BASE_URL = process.env.BASE_URL
+const BASE_PORT = process.env.BASE_PORT
 const API_KEY_BOT = process.env.API_KEY_BOT
 const isProduction = process.env.NODE_ENV === "production"
+const port = (BASE_PORT && +BASE_PORT) || 3000
 
 if (!API_KEY_BOT) {
     throw new Error(`Empty Bot API Key`)
 }
 
 const bot = new TelegramBot(API_KEY_BOT, {
-    ...(!isProduction && { polling: true }),
+    polling: !isProduction,
+    webHook: {
+        host: `${BASE_URL}`,
+        port,
+        autoOpen: true,
+    },
 })
 
 bot.on("polling_error", (err: any): void => console.log(err?.data?.error.message))
@@ -101,10 +109,8 @@ bot.on("callback_query", async (ctx): Promise<void> => {
 })
 
 if (isProduction) {
-    const BASE_URL = process.env.BASE_URL
-    const BASE_PORT = process.env.BASE_PORT
     // This informs the Telegram servers of the new webhook.
-    bot.setWebHook(`${BASE_URL}/bot${API_KEY_BOT}`)
+    // bot.setWebHook(`${BASE_URL}/bot${API_KEY_BOT}`)
 
     const app = express()
 
@@ -118,7 +124,11 @@ if (isProduction) {
     })
 
     // Start Express Server
-    app.listen(BASE_PORT, () => {
-        console.log(`Express server is listening on ${BASE_PORT}`)
+    app.listen(port, () => {
+        console.log(`Express server is listening on ${port}`)
+    })
+
+    app.get("/", (req, res) => {
+        res.send("Hello World!")
     })
 }
